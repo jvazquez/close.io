@@ -4,29 +4,22 @@ Created on Aug 15, 2017
 @author: jvazquez
 @todo Queue max size is lower than the random words
 '''
-from multiprocessing import Queue, Process, cpu_count, current_process
-from os import getpid
+from multiprocessing import Queue, Process
 import random
 
 import urllib.request
 
 
 def obtain_random_words(word_site, queue):
-    myself = current_process().name
-    mypid = getpid()
-    print("({}) {} starting".format(mypid, myself))
     with urllib.request.urlopen(word_site) as response:
         response = response.read()
-    queue.put(response.splitlines()[:100])
-    print("({}) {} leaving".format(mypid, myself))
+    words = response.splitlines()
+    random.shuffle(words)
+    queue.put(words[:100])
 
 
 def obtain_random_numbers(queue):
-    myself = current_process().name
-    mypid = getpid()
-    print("({}) {} starting".format(mypid, myself))
     queue.put(random.sample(range(1, 1000), 100))
-    print("({}) {} leaving".format(mypid, myself))
 
 
 def randomizer():
@@ -43,7 +36,9 @@ def randomizer():
         process.join()
 
     mixed_list = [queue.get() for _p in process_list]
-    salad = mixed_list[0] + mixed_list[1]
+    words = list(map(lambda element: str(element, "utf-8"),
+                     mixed_list[1]))
+    salad = mixed_list[0] + words
     random.shuffle(salad)
     return salad
 
@@ -51,6 +46,6 @@ def randomizer():
 if __name__ == "__main__":
     salad = randomizer()
     with open("salad.txt", "w") as target:
-        target.write(",".join(salad))
+        target.write(",".join(map(str, salad)))
 
     print("Random list is ready")
